@@ -1,0 +1,18 @@
+# Interne Arbeitsdokumente, nicht veröffentlichen
+_internal/
+
+# Lokale Umgebung
+.env
+*.env
+
+# Node / React
+node_modules/
+dist/
+
+# Python
+__pycache__/
+.ipynb_checkpoints/
+
+# Office-Entwürfe
+*.pptx
+*.docx

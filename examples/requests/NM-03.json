@@ -1,0 +1,5 @@
+{
+  "source_channel": "portal",
+  "payload_type": "unstructured",
+  "raw_text": "FleetSoft Kundenportal\nMeldungsnummer: FS-SEC-8831\nStatus: offen\nPriorität: hoch\n\nSicherheitsupdate für FleetDesk Agent verfügbar. Betroffen sind alle Versionen vor 5.7.0. Die Schwachstelle betrifft die lokale Speicherung von Zugangsdaten. Version 5.7.0 enthält die Korrektur.\n\nAutomatisch veröffentlicht am 05.09.2026 um 22:15 Uhr. Bitte verteilen Sie diese Information an die für FleetDesk zuständigen Administratoren."
+}

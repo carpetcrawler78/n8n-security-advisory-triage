@@ -1,0 +1,5 @@
+{
+  "source_channel": "phone",
+  "payload_type": "unstructured",
+  "raw_text": "Interne Service-Desk-Notiz – erfasst nach Telefonat\nDatum: 7. September 2026, 14:05 Uhr\nBearbeiter/in: S. Nowak\n\nTechniker von Anlagenblick GmbH hat angerufen und vor einem möglichen Problem bei PlantView HMI gewarnt: Bei bestimmten Netzwerkkonfigurationen könne die Anmeldemaske umgangen werden. Er war sich nicht sicher, ob das nur die aktuelle Version oder auch ältere Stände betrifft, wollte das intern noch abklären und sich in den nächsten Tagen mit Genauerem melden. Ich habe ihn um eine schriftliche Bestätigung gebeten, die liegt uns aber noch nicht vor."
+}

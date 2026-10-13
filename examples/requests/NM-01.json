@@ -1,0 +1,5 @@
+{
+  "source_channel": "email",
+  "payload_type": "unstructured",
+  "raw_text": "Von: Lena Vogt, LogicGate Produktsupport\nBetreff: Bitte Installationen von LogicGate Control Center prüfen\n\nGuten Tag,\n\nwir möchten Sie vorsorglich auf ein Problem aufmerksam machen, das uns am Wochenende gemeldet wurde. Speziell aufgebaute Konfigurationsdateien können dazu führen, dass der Dienst von LogicGate Control Center beendet wird und anschließend neu gestartet werden muss.\n\nNach aktuellem Stand betrifft das die Ausgaben 4.1.0 bis 4.1.6. In 4.2.0 ist die Korrektur bereits enthalten. Wir bewerten das Problem als mittel. Bitte prüfen Sie bei Ihren betreuten Installationen, ob noch eine der genannten Versionen eingesetzt wird.\n\nViele Grüße\nLena Vogt"
+}

@@ -1,0 +1,5 @@
+{
+  "source_channel": "pdf",
+  "payload_type": "unstructured",
+  "raw_text": "WarenFlow ERP 3.9 – Versionshinweise\n\nWarenstrom Software GmbH\nVeröffentlichung: September 2026\n\nDie neue Version erweitert den Dokumentenexport um eine Vorschau und ermöglicht das Speichern häufig verwendeter Filter. In der Artikelverwaltung können mehrere Datensätze gleichzeitig gekennzeichnet werden.\n\nZusätzlich wurden Bezeichnungen in der Benutzeroberfläche vereinheitlicht und die Ladezeit der Startseite verkürzt. Dieses Dokument beschreibt funktionale Änderungen. Es enthält keine Meldung zu einer Sicherheitslücke und fordert kein sicherheitsbedingtes Update."
+}

@@ -1,0 +1,58 @@
+# Local setup: PostgreSQL with schema and test inventory + n8n.
+# Lokaler Aufbau: PostgreSQL mit Schema und Testinventar + n8n.
+#
+#   cp .env.example .env      # set a password / Passwort setzen
+#   docker compose up -d
+#   n8n: http://localhost:5678
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-advisory}
+      POSTGRES_USER: ${POSTGRES_USER:-advisory}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      # Runs 01_schema.sql and 02_seed_asset_inventory.sql on first start.
+      # Führt beim ersten Start 01_schema.sql und 02_seed_asset_inventory.sql aus.
+      - ./sql:/docker-entrypoint-initdb.d:ro
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.42.7}
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      GENERIC_TIMEZONE: Europe/Berlin
+      TZ: Europe/Berlin
+      # Code nodes run in the separate task-runners container (needed for Python).
+      # Code-Knoten laufen im separaten task-runners-Container (nötig für Python).
+      N8N_RUNNERS_MODE: external
+      N8N_RUNNERS_BROKER_LISTEN_ADDRESS: 0.0.0.0
+      N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:?set N8N_RUNNERS_AUTH_TOKEN in .env}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  task-runners:
+    # Must have the same version as n8n. / Muss dieselbe Version wie n8n haben.
+    image: n8nio/runners:${N8N_VERSION:-2.42.7}
+    restart: unless-stopped
+    environment:
+      N8N_RUNNERS_TASK_BROKER_URI: http://n8n:5679
+      N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:?set N8N_RUNNERS_AUTH_TOKEN in .env}
+    depends_on:
+      - n8n
+
+volumes:
+  postgres_data:
+  n8n_data:

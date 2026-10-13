@@ -1,0 +1,718 @@
+{
+  "name": "02 - Advisory Processing",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -3776,
+        -64
+      ],
+      "id": "7ee6e562-0517-475b-af12-4c733dc0e7da",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH next_request AS (\n    SELECT request_id\n    FROM public.advisory_requests\n    WHERE processing_status = 'NEW' \n    ORDER BY received_at ASC, request_id ASC\n    FOR UPDATE SKIP LOCKED\n    LIMIT 1\n)\nUPDATE public.advisory_requests AS ar\nSET\n    processing_status = 'PROCESSING',\n    attempt_count = ar.attempt_count + 1\nFROM next_request\nWHERE ar.request_id = next_request.request_id\nRETURNING\n    ar.request_id,\n    ar.received_at,\n    ar.source_channel,\n    ar.payload_type,\n    ar.raw_text,\n    ar.processing_status,\n    ar.attempt_count,\n    ar.schema_version;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -3600,
+        -64
+      ],
+      "id": "8c30b809-abb1-42a7-93e5-a33f0c0f4a34",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.payload_type }}",
+                    "rightValue": "structured",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "84d4c630-0366-4034-8d2c-77b1149b00ff"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d3906325-05ff-44b4-8376-e538a55c9bfa",
+                    "leftValue": "={{ $json.payload_type }}",
+                    "rightValue": "unstructured",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -3392,
+        -80
+      ],
+      "id": "47519a1f-f301-4ffc-a19e-0ee91d9eb8f0",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.raw_text }}",
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"is_security_advisory\": {\n      \"type\": \"boolean\",\n      \"description\": \"True, wenn der Eingangstext eine tatsächliche oder mögliche konkrete Schwäche oder Fehlfunktion eines Produkts mit möglicher Auswirkung auf Vertraulichkeit, Integrität oder Verfügbarkeit meldet. True gilt ausdrücklich auch für vorläufige Herstellerhinweise und noch laufende Untersuchungen, sofern eine mögliche konkrete Produktschwäche beschrieben wird. Unsicherheit darüber, ob die Schwäche bereits abschließend bestätigt ist oder welche Versionen betroffen sind, macht den Text nicht zu false; diese Unsicherheit wird über missing_information und später REVIEW_REQUIRED behandelt. False bei Marketing, normalen Versionshinweisen, geplanter Wartung oder Texten, die ausdrücklich keine Produktschwäche melden. Das bloße Auftreten des Wortes Sicherheit reicht nicht für true aus.\"\n    },\n    \"advisory_reference\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"description\": \"Kennnummer, Dokument-ID oder eindeutige Referenz des Sicherheitshinweises exakt aus dem Eingangstext übernehmen. Keine Referenz erfinden. Wenn keine genannt wird, null ausgeben.\"\n    },\n    \"cve_ids\": {\n      \"type\": \"array\",\n      \"description\": \"Alle ausdrücklich im Eingangstext genannten CVE-Nummern unverändert übernehmen. Keine CVE ergänzen oder aus dem Inhalt ableiten. Wenn keine CVE genannt wird, ein leeres Array ausgeben.\",\n      \"items\": {\n        \"type\": \"string\",\n        \"description\": \"Eine ausdrücklich genannte CVE-Nummer im Format CVE-JJJJ-NNNN oder mit entsprechend längerer laufender Nummer.\"\n      }\n    },\n    \"affected_products\": {\n      \"type\": \"array\",\n      \"description\": \"Alle laut Eingangstext betroffenen Produkte und die jeweils dazugehörige Versionsregel. Pro Produkt und eigenständigem Versionsbereich einen Eintrag erzeugen. Keine Produkte aus externem Wissen oder einem Asset-Inventar ergänzen. Bei keinem erkennbaren betroffenen Produkt ein leeres Array ausgeben.\",\n      \"items\": {\n        \"type\": \"object\",\n        \"additionalProperties\": false,\n        \"properties\": {\n          \"vendor\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ],\n            \"description\": \"Herstellername nur übernehmen, wenn der Eingangstext das Unternehmen ausdrücklich als Hersteller oder Anbieter des betroffenen Produkts nennt oder eindeutig damit verbindet. Nicht aus dem Produktnamen, einer E-Mail-Adresse oder einer Absenderdomain ableiten. Wenn kein Hersteller eindeutig genannt ist, null ausgeben.\"\n          },\n          \"product\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ],\n            \"description\": \"Den vollständigen Produktnamen ohne Versionsnummer übernehmen. Eine erkannte Versionsnummer gehört ausschließlich in die Versionsfelder und darf nicht Teil von product sein. Keine Marken- oder Namensbestandteile entfernen oder als Hersteller abtrennen. Beispiel: Aus PlantView HMI 7.4 wird product PlantView HMI und die Version 7.4 wird separat in lower_bound eingetragen. MusterLink Remote Gateway bleibt vollständig der Produktname. Wenn kein Produkt erkennbar ist, null ausgeben.\"\n          },\n          \"affected_version_raw\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ],\n            \"description\": \"Die im Eingangstext enthaltene Aussage zu den betroffenen Versionen möglichst wortgetreu übernehmen. Nicht umformulieren, normalisieren oder durch eine vermutete Versionsregel ersetzen. Wenn keine Versionsinformation genannt wird, null ausgeben.\"\n          },\n          \"version_rule_type\": {\n            \"type\": \"string\",\n            \"description\": \"Regeltyp der ausdrücklich genannten betroffenen Versionen: exact bei genau einer betroffenen Version; range bei einem Bereich mit Unter- und Obergrenze, auch bei Formulierungen wie 2.3.0 through 2.3.2; before bei allen Versionen vor einer Grenze, wobei die Grenze selbst nicht betroffen ist; through bei allen Versionen bis einschließlich einer Obergrenze ohne genannte Untergrenze; all nur wenn ausdrücklich alle Versionen betroffen sind; unknown wenn keine eindeutige Versionsregel bestimmbar ist, Versionsangaben fehlen oder widersprüchlich sind.\",\n            \"enum\": [\n              \"exact\",\n              \"range\",\n              \"before\",\n              \"through\",\n              \"all\",\n              \"unknown\"\n            ]\n          },\n          \"lower_bound\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ],\n            \"description\": \"Explizite untere Grenze des betroffenen Versionsbereichs. Bei range die genannte Untergrenze eintragen. Bei exact die einzelne betroffene Version hier eintragen. Bei before, through, all oder unknown null ausgeben. Keine Grenze aus einer Korrekturversion ableiten.\"\n          },\n          \"lower_inclusive\": {\n            \"type\": [\n              \"boolean\",\n              \"null\"\n            ],\n            \"description\": \"Gibt an, ob lower_bound selbst betroffen ist. Bei Formulierungen wie ab Version 2.3.0 oder 2.3.0 bis einschließlich true; bei größer als 2.3.0 false. Bei exact true. Wenn lower_bound null ist oder die Einbeziehung nicht eindeutig hervorgeht, null ausgeben.\"\n          },\n          \"upper_bound\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ],\n            \"description\": \"Explizite obere Grenze der betroffenen Versionen. Bei range, before oder through die genannte Grenze eintragen. Bei exact, all oder unknown null ausgeben. Eine ausdrücklich genannte nicht betroffene oder korrigierte Version nicht automatisch als betroffene Obergrenze übernehmen.\"\n          },\n          \"upper_inclusive\": {\n            \"type\": [\n              \"boolean\",\n              \"null\"\n            ],\n            \"description\": \"Gibt an, ob upper_bound selbst betroffen ist. Bei bis einschließlich oder through true; bei vor, älter als oder before false. Wenn upper_bound null ist oder die Einbeziehung nicht eindeutig hervorgeht, null ausgeben.\"\n          },\n          \"fixed_version\": {\n            \"type\": [\n              \"string\",\n              \"null\"\n            ],\n            \"description\": \"Version, in der das Problem laut Eingangstext ausdrücklich behoben ist oder ab der Versionen ausdrücklich nicht mehr betroffen sind. Nicht allein aus einer betroffenen Obergrenze ableiten. Wenn keine Korrekturversion genannt wird, null ausgeben.\"\n          }\n        },\n        \"required\": [\n          \"vendor\",\n          \"product\",\n          \"affected_version_raw\",\n          \"version_rule_type\",\n          \"lower_bound\",\n          \"lower_inclusive\",\n          \"upper_bound\",\n          \"upper_inclusive\",\n          \"fixed_version\"\n        ]\n      }\n    },\n    \"severity_stated_by_source\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"description\": \"Nur die ausdrücklich von der Quelle genannte Schwere oder Priorität übernehmen, beispielsweise niedrig, mittel, hoch, kritisch oder einen genannten CVSS-Wert. Keine eigene Schwere berechnen oder ableiten. Wenn keine Einstufung genannt wird, null ausgeben.\"\n    },\n    \"recommended_action\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ],\n      \"description\": \"Nur eine im Eingangstext ausdrücklich empfohlene Maßnahme übernehmen, beispielsweise Prüfung, Update oder vorübergehende Schutzmaßnahme. Keine eigene Handlungsempfehlung ergänzen. Wenn keine Maßnahme genannt wird, null ausgeben.\"\n    },\n    \"missing_information\": {\n      \"type\": \"array\",\n      \"description\": \"Nur fehlende, unklare oder widersprüchliche Angaben aufführen, die für die fachliche Entscheidung über Produkt- oder Versionsbetroffenheit relevant sind. Dazu gehören insbesondere ein fehlendes Produkt, eine fehlende oder unklare Versionsangabe und widersprüchliche Aussagen zur Betroffenheit. Eine nicht genannte CVE, Herstellerangabe, Schwere oder Handlungsempfehlung allein ist kein entscheidungsrelevanter Mangel und soll hier nicht aufgeführt werden. Wenn keine entscheidungsrelevanten Angaben fehlen oder unklar sind, ein leeres Array ausgeben.\",\n      \"items\": {\n        \"type\": \"string\",\n        \"description\": \"Kurze, konkrete Bezeichnung der entscheidungsrelevanten fehlenden, unklaren oder widersprüchlichen Information.\"\n      }\n    },\n    \"evidence_quotes\": {\n      \"type\": \"array\",\n      \"description\": \"Wörtliche, zusammenhängende Belegstellen aus dem Eingangstext, welche die Einstufung als Sicherheitshinweis sowie erkannte Produkte, Versionen, Korrekturversionen, Schweregrade oder Maßnahmen belegen. Zeichen, Schreibweise und vorhandene Kodierungsfehler exakt beibehalten. Nicht übersetzen, sprachlich korrigieren, zusammenfassen oder neue Aussagen bilden.\",\n      \"items\": {\n        \"type\": \"string\",\n        \"description\": \"Eine exakt im Eingangstext vorkommende, zusammenhängende Belegstelle.\"\n      }\n    }\n  },\n  \"required\": [\n    \"is_security_advisory\",\n    \"advisory_reference\",\n    \"cve_ids\",\n    \"affected_products\",\n    \"severity_stated_by_source\",\n    \"recommended_action\",\n    \"missing_information\",\n    \"evidence_quotes\"\n  ]\n}\n\n",
+        "options": {
+          "systemPromptTemplate": "Du extrahierst ausschließlich Advisory-Fakten aus dem bereitgestellten Originaltext.\n\nGib genau die Felder aus, die im JSON-Schema definiert sind. Erzeuge auf keiner Ebene zusätzliche Felder. Insbesondere ist „description“ kein Ausgabefeld.\n\nErfinde keine Informationen. Verwende für fehlende Einzelwerte null.\n\nBewerte is_security_advisory nach dem beschriebenen Sachverhalt und nicht nach einzelnen Schlüsselwörtern. Eine tatsächliche Produktschwäche mit möglicher Auswirkung auf Vertraulichkeit, Integrität oder Verfügbarkeit ist ein Security-Advisory. Dazu zählt auch, wenn speziell präparierte Dateien oder Eingaben einen Dienst beenden, stören oder zum Neustart zwingen können. Eine ausdrückliche CVE oder die Wörter Sicherheit und Advisory sind nicht erforderlich. Marketing, normale Versionshinweise, geplante Wartung und ausdrücklich verneinte Produktschwächen sind kein Security-Advisory.\n\nEin vorläufiger Herstellerhinweis oder eine noch laufende Untersuchung ist ebenfalls als is_security_advisory = true einzustufen, wenn der Text eine mögliche konkrete Produktschwäche beschreibt. Eine fehlende abschließende Bestätigung oder eine unbekannte betroffene Version führt nicht zu false. Solche Unsicherheiten werden in missing_information dokumentiert und später durch REVIEW_REQUIRED behandelt.\n\nTrage in missing_information nur fehlende, unklare oder widersprüchliche Angaben ein, die für die Entscheidung über Produkt- oder Versionsbetroffenheit relevant sind. Eine fehlende CVE, Herstellerangabe, Schwere oder Handlungsempfehlung allein ist kein entscheidungsrelevanter Mangel.\n\nJeder Eintrag in evidence_quotes muss eine nicht leere, zusammenhängende und wortwörtlich im Originaltext vorkommende Belegstelle sein.\n\nErzeuge niemals Status-, Asset- oder Audit-Felder."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        -3104,
+        -64
+      ],
+      "id": "b11feede-9d25-421a-be56-deff2bba0937",
+      "name": "Information Extractor",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-20b",
+        "options": {
+          "maxTokensToSample": 3000,
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -3008,
+        112
+      ],
+      "id": "1e2ea4e0-6d76-4dae-a9f6-a2f30d2b3527",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ {\n  ...$('Switch').item.json,\n  ...$json.output,\n  extraction_method: 'llm',\n  model_provider: 'groq',\n  model_name: 'openai/gpt-oss-20b'\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -2816,
+        -80
+      ],
+      "id": "42abce0a-78df-48a6-85dd-093d27b64027",
+      "name": "Prepare LLM Results"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ {\n  ...$json,\n  is_security_advisory: JSON.parse($json.raw_text).is_security_advisory,\n  advisory_reference: JSON.parse($json.raw_text).advisory_reference,\n  cve_ids: JSON.parse($json.raw_text).cve_ids,\n  affected_products: JSON.parse($json.raw_text).affected_products,\n  severity_stated_by_source: JSON.parse($json.raw_text).severity_stated_by_source,\n  recommended_action: JSON.parse($json.raw_text).recommended_action,\n  missing_information: JSON.parse($json.raw_text).missing_information,\n  evidence_quotes: JSON.parse($json.raw_text).evidence_quotes,\n  extraction_method: 'structured_mapping',\n  model_provider: null,\n  model_name: null\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -2832,
+        -320
+      ],
+      "id": "6b256b1e-b3b6-4208-aa12-4d1dac41729f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "language": "pythonNative",
+        "pythonCode": "allowed_version_rules = {\n    \"exact\",\n    \"range\",\n    \"before\",\n    \"through\",\n    \"all\",\n    \"unknown\",\n}\n\nrequired_fields = [\n    \"is_security_advisory\",\n    \"advisory_reference\",\n    \"cve_ids\",\n    \"affected_products\",\n    \"severity_stated_by_source\",\n    \"recommended_action\",\n    \"missing_information\",\n    \"evidence_quotes\",\n]\n\nrequired_product_fields = [\n    \"vendor\",\n    \"product\",\n    \"affected_version_raw\",\n    \"version_rule_type\",\n    \"lower_bound\",\n    \"lower_inclusive\",\n    \"upper_bound\",\n    \"upper_inclusive\",\n    \"fixed_version\",\n]\n\n\ndef is_string_or_none(value):\n    return isinstance(value, str) or value is None\n\n\ndef is_boolean_or_none(value):\n    return isinstance(value, bool) or value is None\n\n\ndef has_text(value):\n    return isinstance(value, str) and value.strip() != \"\"\n\n\nresults = []\n\nfor item in _items:\n    original_data = item[\"json\"]\n\n    # Kopie erstellen, damit normalisierte Werte kontrolliert\n    # an die nachfolgenden Nodes weitergegeben werden.\n    data = dict(original_data)\n\n    if isinstance(original_data.get(\"affected_products\"), list):\n        data[\"affected_products\"] = [\n            dict(product) if isinstance(product, dict) else product\n            for product in original_data[\"affected_products\"]\n        ]\n\n    schema_errors = []\n    normalization_notes = []\n\n    for field in required_fields:\n        if field not in data:\n            schema_errors.append(f\"MISSING_FIELD:{field}\")\n\n    if (\n        \"is_security_advisory\" in data\n        and not isinstance(data[\"is_security_advisory\"], bool)\n    ):\n        schema_errors.append(\"INVALID_TYPE:is_security_advisory\")\n\n    if (\n        \"advisory_reference\" in data\n        and not is_string_or_none(data[\"advisory_reference\"])\n    ):\n        schema_errors.append(\"INVALID_TYPE:advisory_reference\")\n\n    if (\n        \"severity_stated_by_source\" in data\n        and not is_string_or_none(data[\"severity_stated_by_source\"])\n    ):\n        schema_errors.append(\n            \"INVALID_TYPE:severity_stated_by_source\"\n        )\n\n    if (\n        \"recommended_action\" in data\n        and not is_string_or_none(data[\"recommended_action\"])\n    ):\n        schema_errors.append(\"INVALID_TYPE:recommended_action\")\n\n    for field in [\n        \"cve_ids\",\n        \"missing_information\",\n        \"evidence_quotes\",\n    ]:\n        if field in data:\n            value = data[field]\n\n            if (\n                not isinstance(value, list)\n                or not all(isinstance(entry, str) for entry in value)\n            ):\n                schema_errors.append(f\"INVALID_TYPE:{field}\")\n\n    if (\n        \"affected_products\" in data\n        and not isinstance(data[\"affected_products\"], list)\n    ):\n        schema_errors.append(\"INVALID_TYPE:affected_products\")\n\n    # Ein echtes Advisory ohne erkennbares Produkt muss geprüft werden.\n    if (\n        data.get(\"is_security_advisory\") is True\n        and isinstance(data.get(\"affected_products\"), list)\n        and len(data[\"affected_products\"]) == 0\n    ):\n        schema_errors.append(\"MISSING_VALUE:affected_products\")\n\n    if isinstance(data.get(\"affected_products\"), list):\n        for index, product in enumerate(data[\"affected_products\"]):\n            if not isinstance(product, dict):\n                schema_errors.append(\n                    f\"INVALID_TYPE:affected_products[{index}]\"\n                )\n                continue\n\n            for field in required_product_fields:\n                if field not in product:\n                    schema_errors.append(\n                        f\"MISSING_FIELD:\"\n                        f\"affected_products[{index}].{field}\"\n                    )\n\n            for field in [\n                \"vendor\",\n                \"product\",\n                \"affected_version_raw\",\n                \"lower_bound\",\n                \"upper_bound\",\n                \"fixed_version\",\n            ]:\n                if (\n                    field in product\n                    and not is_string_or_none(product[field])\n                ):\n                    schema_errors.append(\n                        f\"INVALID_TYPE:\"\n                        f\"affected_products[{index}].{field}\"\n                    )\n\n            for field in [\n                \"lower_inclusive\",\n                \"upper_inclusive\",\n            ]:\n                if (\n                    field in product\n                    and not is_boolean_or_none(product[field])\n                ):\n                    schema_errors.append(\n                        f\"INVALID_TYPE:\"\n                        f\"affected_products[{index}].{field}\"\n                    )\n\n            rule = product.get(\"version_rule_type\")\n\n            if (\n                \"version_rule_type\" in product\n                and (\n                    not isinstance(rule, str)\n                    or rule not in allowed_version_rules\n                )\n            ):\n                schema_errors.append(\n                    f\"INVALID_VALUE:\"\n                    f\"affected_products[{index}].version_rule_type\"\n                )\n\n            if not has_text(product.get(\"product\")):\n                schema_errors.append(\n                    f\"MISSING_VALUE:\"\n                    f\"affected_products[{index}].product\"\n                )\n\n            lower_present = has_text(product.get(\"lower_bound\"))\n            upper_present = has_text(product.get(\"upper_bound\"))\n\n            # Bei einer exakten Versionsregel darf die separat extrahierte\n            # Version nicht zusätzlich am Ende des Produktnamens stehen.\n            # Beispiel: \"PlantView HMI 7.4\" wird zu \"PlantView HMI\",\n            # wenn lower_bound bereits \"7.4\" enthält.\n            if (\n                rule == \"exact\"\n                and lower_present\n                and has_text(product.get(\"product\"))\n            ):\n                product_name = product[\"product\"].strip()\n                exact_version = product[\"lower_bound\"].strip()\n                version_suffix = f\" {exact_version}\"\n\n                if product_name.endswith(version_suffix):\n                    normalized_product = product_name[\n                        :-len(version_suffix)\n                    ].strip()\n\n                    if normalized_product:\n                        product[\"product\"] = normalized_product\n\n                        normalization_notes.append(\n                            f\"NORMALIZED_PRODUCT_VERSION_SUFFIX:\"\n                            f\"affected_products[{index}]:\"\n                            f\"{product_name}->{normalized_product}\"\n                        )\n\n            # Zwei ausdrücklich extrahierte Grenzen bilden einen Bereich.\n            # Damit wird beispielsweise die Fehlinterpretation des englischen\n            # Wortes \"through\" als Regeltyp \"through\" korrigiert.\n            if (\n                isinstance(rule, str)\n                and rule in allowed_version_rules\n                and lower_present\n                and upper_present\n                and rule != \"range\"\n            ):\n                old_rule = rule\n                product[\"version_rule_type\"] = \"range\"\n                rule = \"range\"\n\n                normalization_notes.append(\n                    f\"NORMALIZED_VERSION_RULE:\"\n                    f\"affected_products[{index}]:\"\n                    f\"{old_rule}->range\"\n                )\n\n            # Semantische Konsistenz zwischen Regeltyp und Grenzen prüfen.\n            if rule == \"range\":\n                if not lower_present or not upper_present:\n                    schema_errors.append(\n                        f\"INCONSISTENT_VERSION_RULE:\"\n                        f\"affected_products[{index}].\"\n                        f\"range_requires_both_bounds\"\n                    )\n\n                if (\n                    not isinstance(product.get(\"lower_inclusive\"), bool)\n                    or not isinstance(product.get(\"upper_inclusive\"), bool)\n                ):\n                    schema_errors.append(\n                        f\"INCONSISTENT_VERSION_RULE:\"\n                        f\"affected_products[{index}].\"\n                        f\"range_requires_inclusive_flags\"\n                    )\n\n            elif rule == \"exact\":\n                if not lower_present:\n                    schema_errors.append(\n                        f\"INCONSISTENT_VERSION_RULE:\"\n                        f\"affected_products[{index}].\"\n                        f\"exact_requires_lower_bound\"\n                    )\n\n                if product.get(\"lower_inclusive\") is not True:\n                    schema_errors.append(\n                        f\"INCONSISTENT_VERSION_RULE:\"\n                        f\"affected_products[{index}].\"\n                        f\"exact_requires_lower_inclusive_true\"\n                    )\n\n            elif rule == \"before\":\n                if not upper_present:\n                    schema_errors.append(\n                        f\"INCONSISTENT_VERSION_RULE:\"\n                        f\"affected_products[{index}].\"\n                        f\"before_requires_upper_bound\"\n                    )\n\n                if product.get(\"upper_inclusive\") is not False:\n                    schema_errors.append(\n                        f\"INCONSISTENT_VERSION_RULE:\"\n                        f\"affected_products[{index}].\"\n                        f\"before_requires_upper_inclusive_false\"\n                    )\n\n            elif rule == \"through\":\n                if not upper_present:\n                    schema_errors.append(\n                        f\"INCONSISTENT_VERSION_RULE:\"\n                        f\"affected_products[{index}].\"\n                        f\"through_requires_upper_bound\"\n                    )\n\n                if product.get(\"upper_inclusive\") is not True:\n                    schema_errors.append(\n                        f\"INCONSISTENT_VERSION_RULE:\"\n                        f\"affected_products[{index}].\"\n                        f\"through_requires_upper_inclusive_true\"\n                    )\n\n    raw_text = data.get(\"raw_text\")\n    evidence_quotes = data.get(\"evidence_quotes\")\n\n    evidence_valid = (\n        isinstance(raw_text, str)\n        and isinstance(evidence_quotes, list)\n        and len(evidence_quotes) > 0\n        and all(\n            isinstance(quote, str)\n            and quote.strip() != \"\"\n            and quote in raw_text\n            for quote in evidence_quotes\n        )\n    )\n\n    validation_errors = list(schema_errors)\n\n    if not evidence_valid:\n        validation_errors.append(\"EVIDENCE_NOT_IN_RAW_TEXT\")\n\n    data[\"schema_valid\"] = len(schema_errors) == 0\n    data[\"evidence_valid\"] = evidence_valid\n    data[\"validation_errors\"] = validation_errors\n    data[\"normalization_notes\"] = normalization_notes\n\n    results.append({\"json\": data})\n\nreturn results"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2640,
+        -160
+      ],
+      "id": "b5450d69-ea4f-4722-a857-1cf8e3714301",
+      "name": "Validate Advisory Schema"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.is_security_advisory }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "id": "e88ab359-cd1b-4ae7-a1f2-e3ca6f5b7a33"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "INVALID_ADVISORY"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "5d39b8e8-2baa-4e88-b6c4-0f1c8e1f9f1a",
+                    "leftValue": "={{ $json.schema_valid }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  },
+                  {
+                    "id": "7afb3df8-b1ab-48d1-b1f6-76331f26ca4e",
+                    "leftValue": "={{ $json.evidence_valid }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "or"
+              },
+              "renameOutput": true,
+              "outputKey": "REVIEW_REQUIRED"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ca64dee0-9eb8-43bb-a190-5e32aab62cf4",
+                    "leftValue": "={{ $json.is_security_advisory }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ASSET_MATCH"
+            }
+          ]
+        },
+        "options": {
+          "allMatchingOutputs": false
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -2480,
+        -192
+      ],
+      "id": "2d84f1d3-fe1c-4a83-8b34-f2a5c439e976",
+      "name": "Route Validation Result Hub"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE(\n    jsonb_agg(\n        jsonb_build_object(\n            'asset_id', asset_id,\n            'customer_name', customer_name,\n            'device_name', device_name,\n            'vendor', vendor,\n            'product', product,\n            'installed_version', installed_version\n        )\n        ORDER BY asset_id\n    ),\n    '[]'::jsonb\n) AS asset_candidates\nFROM public.asset_inventory;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -2240,
+        -64
+      ],
+      "id": "5b94c5eb-8d6f-4387-a392-942f950b9e01",
+      "name": "Load Asset Inventory",
+      "credentials": {
+        "postgres": {
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const advisory = $('Validate Advisory Schema').first().json;\nconst assetCandidates =\n  $input.first().json.asset_candidates ?? [];\n\nreturn [{\n  json: {\n    ...advisory,\n    asset_candidates: assetCandidates\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2032,
+        -64
+      ],
+      "id": "25075040-d87d-4bd4-aecf-3e8d167f4680",
+      "name": "Combine Advisory and Assets"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nconst assets = Array.isArray(data.asset_candidates)\n  ? data.asset_candidates\n  : [];\n\nconst affectedProducts = Array.isArray(data.affected_products)\n  ? data.affected_products\n  : [];\n\n// Nur für den Vergleich: Leerzeichen entfernen und kleinschreiben\nfunction normalize(value) {\n  return String(value ?? '').trim().toLowerCase();\n}\n\n// Version \"2.3.1\" → [2, 3, 1]\nfunction versionParts(value) {\n  const text = String(value ?? '').trim();\n\n  if (!/^\\d+(?:\\.\\d+)*$/.test(text)) {\n    return null;\n  }\n\n  return text.split('.').map(Number);\n}\n\n// Ergebnis: -1 = kleiner, 0 = gleich, 1 = größer\nfunction compareVersions(left, right) {\n  const a = versionParts(left);\n  const b = versionParts(right);\n\n  if (!a || !b) {\n    return null;\n  }\n\n  const length = Math.max(a.length, b.length);\n\n  for (let i = 0; i < length; i++) {\n    const partA = a[i] ?? 0;\n    const partB = b[i] ?? 0;\n\n    if (partA < partB) return -1;\n    if (partA > partB) return 1;\n  }\n\n  return 0;\n}\n\nfunction versionMatches(installedVersion, affected) {\n  const type = affected.version_rule_type;\n\n  if (type === 'all') {\n    return true;\n  }\n\n  if (type === 'unknown') {\n    return null;\n  }\n\n  if (type === 'exact') {\n    let target =\n      affected.lower_bound ??\n      affected.upper_bound;\n\n    if (!target) {\n      const match = String(\n        affected.affected_version_raw ?? ''\n      ).match(/\\d+(?:\\.\\d+)*/);\n\n      target = match?.[0] ?? null;\n    }\n\n    return compareVersions(installedVersion, target) === 0;\n  }\n\n  if (type === 'before') {\n    const comparison = compareVersions(\n      installedVersion,\n      affected.upper_bound\n    );\n\n    return comparison === null ? null : comparison < 0;\n  }\n\n  if (type === 'through') {\n    const comparison = compareVersions(\n      installedVersion,\n      affected.upper_bound\n    );\n\n    return comparison === null ? null : comparison <= 0;\n  }\n\n  if (type === 'range') {\n    const lowerComparison = compareVersions(\n      installedVersion,\n      affected.lower_bound\n    );\n\n    const upperComparison = compareVersions(\n      installedVersion,\n      affected.upper_bound\n    );\n\n    if (lowerComparison === null || upperComparison === null) {\n      return null;\n    }\n\n    const lowerMatches = affected.lower_inclusive\n      ? lowerComparison >= 0\n      : lowerComparison > 0;\n\n    const upperMatches = affected.upper_inclusive\n      ? upperComparison <= 0\n      : upperComparison < 0;\n\n    return lowerMatches && upperMatches;\n  }\n\n  return null;\n}\n\nlet productMatch = false;\nlet versionCheckUnclear = false;\nconst matchedAssets = new Map();\n\nfor (const affected of affectedProducts) {\n  for (const asset of assets) {\n    const sameProduct =\n      normalize(affected.product) === normalize(asset.product);\n\n    const sameVendor =\n      !affected.vendor ||\n      normalize(affected.vendor) === normalize(asset.vendor);\n\n    if (!sameProduct || !sameVendor) {\n      continue;\n    }\n\n    productMatch = true;\n\n    const matches = versionMatches(\n      asset.installed_version,\n      affected\n    );\n\n    if (matches === null) {\n      versionCheckUnclear = true;\n    }\n\n    if (matches === true) {\n      matchedAssets.set(asset.asset_id, {\n        asset_id: asset.asset_id,\n        inventory_product: asset.product,\n        installed_version: asset.installed_version,\n        match_reason:\n          `Installierte Version ${asset.installed_version} erfüllt ` +\n          `die Regel „${affected.affected_version_raw ?? affected.version_rule_type}“.`\n      });\n    }\n  }\n}\n\nreturn [{\n  json: {\n    ...data,\n    product_match: productMatch,\n    version_check_unclear: versionCheckUnclear,\n    matched_assets: [...matchedAssets.values()],\n    match_count: matchedAssets.size\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1840,
+        -64
+      ],
+      "id": "d99cdc07-3413-4f9e-81c4-37b8a9fe45ee",
+      "name": "Match Products and Versions"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nlet status;\nlet reasonCodes;\n\nconst hasDecisionRelevantMissingInformation =\n  Array.isArray(data.missing_information) &&\n  data.missing_information.some(\n    entry =>\n      typeof entry === 'string' &&\n      entry.trim() !== ''\n  );\n\nif (!data.product_match) {\n  status = 'NO_MATCH_FOUND';\n  reasonCodes = ['PRODUCT_NOT_IN_INVENTORY'];\n\n} else if (\n  hasDecisionRelevantMissingInformation ||\n  data.version_check_unclear\n) {\n  status = 'REVIEW_REQUIRED';\n  reasonCodes = ['VERSION_INFORMATION_UNCLEAR'];\n\n} else if (data.match_count > 0) {\n  status = 'POTENTIALLY_AFFECTED';\n  reasonCodes = ['PRODUCT_AND_VERSION_MATCH'];\n\n} else {\n  status = 'NO_MATCH_FOUND';\n  reasonCodes = ['PRODUCT_FOUND_VERSION_NOT_AFFECTED'];\n}\n\nreturn [{\n  json: {\n    ...data,\n    status,\n    matched_assets:\n      status === 'REVIEW_REQUIRED'\n        ? []\n        : (data.matched_assets ?? []),\n    match_count:\n      status === 'REVIEW_REQUIRED'\n        ? 0\n        : (data.match_count ?? 0),\n    reason_codes: reasonCodes,\n    decided_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1680,
+        -64
+      ],
+      "id": "a5e861b4-abd4-49f0-9196-2f150fb873d3",
+      "name": "Decide Status"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nreturn [{\n  json: {\n    ...data,\n    status: 'INVALID_ADVISORY',\n    matched_assets: [],\n    reason_codes: ['NOT_A_SECURITY_ADVISORY'],\n    decided_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1856,
+        -384
+      ],
+      "id": "f1ca6f89-774d-4eef-98e3-f6a79273aff9",
+      "name": "Set Invalid Advisory Status"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.advisory_requests\nSET\n    is_security_advisory = $1,\n    advisory_reference = $2,\n    cve_ids = $3::jsonb,\n    affected_products = $4::jsonb,\n    severity_stated_by_source = $5,\n    recommended_action = $6,\n    missing_information = $7::jsonb,\n    evidence_quotes = $8::jsonb,\n    extraction_method = $9,\n    model_provider = $10,\n    model_name = $11,\n    status = $12,\n    matched_assets = $13::jsonb,\n    reason_codes = $14::jsonb,\n    decided_at = $15::timestamptz,\n    processing_status = 'DONE',\n    error_detail = NULL,\n    processed_at = NOW()\nWHERE request_id = $16\nRETURNING\n    request_id,\n    processing_status,\n    status,\n    matched_assets,\n    reason_codes,\n    decided_at,\n    processed_at;",
+        "options": {
+          "queryReplacement": "={{ [\n  $json.is_security_advisory,\n  $json.advisory_reference ?? null,\n  JSON.stringify($json.cve_ids ?? []),\n  JSON.stringify($json.affected_products ?? []),\n  $json.severity_stated_by_source ?? null,\n  $json.recommended_action ?? null,\n  JSON.stringify($json.missing_information ?? []),\n  JSON.stringify($json.evidence_quotes ?? []),\n  $json.extraction_method,\n  $json.model_provider ?? null,\n  $json.model_name ?? null,\n  $json.status,\n  JSON.stringify($json.matched_assets ?? []),\n  JSON.stringify($json.reason_codes ?? []),\n  $json.decided_at,\n  $json.request_id\n] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -1440,
+        -208
+      ],
+      "id": "c0b96da3-a282-4503-ae64-d88f8318963a",
+      "name": "Save Processing Result",
+      "credentials": {
+        "postgres": {
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst reasonCodes = [];\n\nif (data.schema_valid !== true) {\n  reasonCodes.push('SCHEMA_VALIDATION_FAILED');\n}\n\nif (data.evidence_valid !== true) {\n  reasonCodes.push('EVIDENCE_VALIDATION_FAILED');\n}\n\nreturn [{\n  json: {\n    ...data,\n    status: 'REVIEW_REQUIRED',\n    matched_assets: [],\n    reason_codes: reasonCodes,\n    decided_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1856,
+        -208
+      ],
+      "id": "6694f6e7-1453-4a3d-9a84-4c8cfc8b4086",
+      "name": "Set Validation Review Status"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f149550c-0a94-41aa-8d9e-730033750750",
+              "name": "work_available",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "4f65c97c-85fd-43ef-a8f8-34b0590707e2",
+              "name": "result_code",
+              "value": "NO_NEW_REQUEST",
+              "type": "string"
+            },
+            {
+              "id": "6f30d20e-37d1-4822-9468-fe1ed5e8fd05",
+              "name": "message",
+              "value": "Kein Datensatz mit processing_status = NEW gefunden. Der Datensatz wird möglicherweise bereits verarbeitet oder ist schon abgeschlossen.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -2864,
+        336
+      ],
+      "id": "b8b8b285-536b-4791-a2f1-dca3f850e0b5",
+      "name": "Set No New Request Message"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0563a79b-50c4-4fba-b2b1-9b2aef027be8",
+              "name": "request_id",
+              "value": "={{ $('Execute a SQL query').first().json.request_id }}",
+              "type": "string"
+            },
+            {
+              "id": "27068655-07f2-432e-b27e-8946b04cbf9c",
+              "name": "processing_status",
+              "value": "ERROR",
+              "type": "string"
+            },
+            {
+              "id": "ccf58ab8-2079-4a98-a330-9b1be152941e",
+              "name": "error_detail",
+              "value": "={{ $json.error?.message ?? $json.message ?? 'LLM extraction failed' }}",
+              "type": "string"
+            },
+            {
+              "id": "cae7daaa-5068-42e9-82cc-2d6c8156228b",
+              "name": "processed_at",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -2816,
+        128
+      ],
+      "id": "c9a096a1-76a0-47af-a001-5e73d423419a",
+      "name": "Prepare LLM Error"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE public.advisory_requests\nSET\n    processing_status = 'ERROR',\n    error_detail = $1,\n    processed_at = NOW()\nWHERE request_id = $2\nRETURNING\n    request_id,\n    processing_status,\n    error_detail,\n    processed_at;",
+        "options": {
+          "queryReplacement": "={{ [  $json.error_detail,  $json.request_id] }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -2464,
+        144
+      ],
+      "id": "5837c3d7-c720-4d0e-816e-f4eb54a4ad8f",
+      "name": "Save Processing Error",
+      "credentials": {
+        "postgres": {
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Information Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set No New Request Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor": {
+      "main": [
+        [
+          {
+            "node": "Prepare LLM Results",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare LLM Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Validate Advisory Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare LLM Results": {
+      "main": [
+        [
+          {
+            "node": "Validate Advisory Schema",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Advisory Schema": {
+      "main": [
+        [
+          {
+            "node": "Route Validation Result Hub",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Validation Result Hub": {
+      "main": [
+        [
+          {
+            "node": "Set Invalid Advisory Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Validation Review Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Load Asset Inventory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Asset Inventory": {
+      "main": [
+        [
+          {
+            "node": "Combine Advisory and Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Advisory and Assets": {
+      "main": [
+        [
+          {
+            "node": "Match Products and Versions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Match Products and Versions": {
+      "main": [
+        [
+          {
+            "node": "Decide Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Status": {
+      "main": [
+        [
+          {
+            "node": "Save Processing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Invalid Advisory Status": {
+      "main": [
+        [
+          {
+            "node": "Save Processing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Validation Review Status": {
+      "main": [
+        [
+          {
+            "node": "Save Processing Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare LLM Error": {
+      "main": [
+        [
+          {
+            "node": "Save Processing Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "tags": []
+}

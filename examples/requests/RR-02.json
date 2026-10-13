@@ -1,0 +1,5 @@
+{
+  "source_channel": "pdf",
+  "payload_type": "unstructured",
+  "raw_text": "Vorläufiges Sicherheitsbulletin SW-2026-011\n\nSicherWerk Software AG – DataSafe Backup\nStand: 7. September 2026, 09:00 Uhr\n\nIn der Zusammenfassung dieses Bulletins wird DataSafe Backup bis einschließlich Version 6.1 als betroffen bezeichnet. Die korrigierte Fassung soll mit Version 6.2 bereitgestellt werden.\n\nTechnische Übersicht\n\n| Version | Bewertung |\n| --- | --- |\n| 6.0 | betroffen |\n| 6.1 | nach aktueller Prüfung nicht betroffen |\n| 6.2 | Korrekturversion |\n\nDie Angaben werden derzeit durch das Entwicklungsteam überprüft. Bis zur Veröffentlichung einer korrigierten Fassung sollen Partner keine endgültige Aussage gegenüber Kunden treffen."
+}

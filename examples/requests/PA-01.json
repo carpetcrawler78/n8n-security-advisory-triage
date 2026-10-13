@@ -1,0 +1,5 @@
+{
+  "source_channel": "email",
+  "payload_type": "unstructured",
+  "raw_text": "Von: security-notifications@musterwerk.example\nBetreff: Sicherheitsinformation MS-2026-014 – MusterLink Remote Gateway\nMeldungstyp: Security Advisory\nHerstellerbewertung: Hoch\n\nBei einer internen Sicherheitsprüfung wurde ein Fehler in der Anmeldekomponente von MusterLink Remote Gateway festgestellt. Unter bestimmten Umständen könnte dadurch ein unbefugter Zugriff auf das Fernwartungssystem ermöglicht werden.\n\nBetroffen sind die Versionen 2.3.0 bis einschließlich 2.3.2. Installationen ab Version 2.4.0 sind nach unserem derzeitigen Kenntnisstand nicht betroffen. Wir empfehlen, vorhandene Installationen zeitnah zu überprüfen und betroffene Systeme auf Version 2.4.0 zu aktualisieren.\n\nEine CVE-Nummer wurde bislang nicht vergeben. Diese Nachricht wurde automatisch über den Sicherheitsverteiler der Musterwerk Systems GmbH versendet."
+}

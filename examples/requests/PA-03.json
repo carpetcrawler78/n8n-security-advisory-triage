@@ -1,0 +1,5 @@
+{
+  "source_channel": "portal",
+  "payload_type": "unstructured",
+  "raw_text": "Musterwerk Partnerportal / Sicherheitsmeldungen\nEintrag: AB-2026-117\nVeröffentlicht: 6. September 2026, 08:40 Uhr\n\nFür PlantView HMI 7.4 steht ein dringendes Sicherheitsupdate bereit. Bei der Verarbeitung einer fehlerhaften Projektdatei kann die Anwendung unerwartet Befehle mit den Rechten des angemeldeten Benutzers ausführen. Andere Versionen wurden im Rahmen dieser Meldung nicht bewertet.\n\nAnlagenblick GmbH empfiehlt Kunden mit Version 7.4, die Anwendung nicht unbeaufsichtigt mit Dateien aus unbekannter Herkunft zu verwenden und auf Version 7.4.2 zu wechseln. Einstufung durch den Hersteller: hoch."
+}

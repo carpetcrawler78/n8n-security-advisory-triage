@@ -1,0 +1,5 @@
+{
+  "source_channel": "phone",
+  "payload_type": "unstructured",
+  "raw_text": "Interne Service-Desk-Notiz – erfasst nach Telefonat\nDatum: 8. September 2026, 09:50 Uhr\nBearbeiter/in: R. Vogel\n\nJemand von Warenstrom Software GmbH hat angerufen, ziemlich kurzfristig, wollte eigentlich nur schnell Bescheid geben. Es geht wohl um WarenFlow ERP, ein Sicherheitsthema beim Im- oder Export von Dokumenten, genau wusste er es selbst nicht mehr, aber er war sich sicher: alle Versionen bis einschließlich 3.8 sind betroffen, ab 3.9 sei es behoben. Er sagte, das sei mittlerweile auch offiziell bestätigt, nicht mehr nur ein Verdacht wie letzte Woche. Ein schriftliches Bulletin soll noch folgen, lag zum Zeitpunkt des Anrufs aber noch nicht vor."
+}

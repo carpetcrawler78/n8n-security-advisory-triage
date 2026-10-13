@@ -1,0 +1,5 @@
+{
+  "source_channel": "email",
+  "payload_type": "unstructured",
+  "raw_text": "Von: Martin Keller, Musterwerk Systems GmbH\nBetreff: Vorabinformation zu MusterLink Remote Gateway\n\nGuten Morgen,\n\nunsere Technik untersucht momentan ein mögliches Sicherheitsproblem bei bestimmten älteren Installationen von MusterLink Remote Gateway. Nach bisherigen Erkenntnissen kann das Problem unter besonderen Bedingungen die Anmeldung am Fernwartungssystem beeinträchtigen.\n\nIch kann Ihnen heute leider noch nicht mitteilen, welche Versionsstände genau betroffen sind. Bitte prüfen Sie daher zunächst nur, bei welchen Kunden das Produkt eingesetzt wird, und nehmen Sie noch keine pauschale Bewertung aller Installationen vor. Wir stellen eine ergänzte Meldung bereit, sobald die Untersuchung abgeschlossen ist.\n\nFreundliche Grüße\nMartin Keller"
+}

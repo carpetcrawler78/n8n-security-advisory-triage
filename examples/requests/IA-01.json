@@ -1,0 +1,5 @@
+{
+  "source_channel": "email",
+  "payload_type": "unstructured",
+  "raw_text": "Von: veranstaltungen@musterwerk.example\nBetreff: Einladung zum Online-Seminar „Sicher fernwarten“\n\nSehr geehrte Partnerinnen und Partner,\n\nam 18. September zeigen wir Ihnen in einem kostenlosen Online-Seminar, wie Sie Benutzerrollen in MusterLink Remote Gateway verwalten und die Sicherheit Ihrer Fernwartungsprozesse verbessern können. Außerdem stellen wir die neue Übersichtsseite der Version 2.4.1 vor.\n\nDie Veranstaltung enthält eine Live-Demonstration und Zeit für Fragen. Es wird kein Produktfehler oder aktueller Sicherheitshinweis gemeldet.\n\nWir freuen uns auf Ihre Teilnahme."
+}

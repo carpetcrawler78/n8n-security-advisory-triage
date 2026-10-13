@@ -1,0 +1,5 @@
+{
+  "source_channel": "pdf",
+  "payload_type": "unstructured",
+  "raw_text": "SicherWerk Software AG\n\nTechnisches Sicherheitsbulletin SW-2026-009\n\nProdukt: DataSafe Backup\nVeröffentlichung: 4. September 2026\n\nUnser Entwicklungsteam hat bei der Prüfung der Wiederherstellungsfunktion einen Fehler entdeckt. Ein angemeldeter Benutzer mit eingeschränkten Rechten kann unter bestimmten Bedingungen auf Sicherungssätze zugreifen, für die ihm keine Berechtigung erteilt wurde.\n\nNach Abschluss der internen Analyse können wir bestätigen, dass DataSafe Backup 6.0 und 6.1 betroffen sind. Die Korrektur ist in Version 6.2 enthalten. Die von uns angegebene Schwere ist hoch.\n\nBetreiber sollen vor dem Update prüfen, ob bestehende Sicherungsaufträge erfolgreich abgeschlossen wurden. Anschließend empfehlen wir die Aktualisierung auf Version 6.2. Eine CVE-Zuordnung liegt zum Zeitpunkt der Veröffentlichung nicht vor.\n\n*Dieses Bulletin wurde von der Produkt-Security-Abteilung der SicherWerk Software AG manuell erstellt.*"
+}

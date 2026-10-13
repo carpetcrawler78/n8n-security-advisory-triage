@@ -1,0 +1,5 @@
+{
+  "source_channel": "portal",
+  "payload_type": "unstructured",
+  "raw_text": "Warenstrom Supportportal\nKategorie: Sicherheit\nBeitrag von: Produktbetreuung\n\nBei einzelnen Installationen von WarenFlow ERP aus der Produktgeneration 3.x kann es zu einem sicherheitsrelevanten Fehler beim Dokumentenexport kommen. Nicht jede Ausgabe der Produktgeneration ist betroffen. Eine vollständige Liste der Versionsstände liegt dem Support noch nicht vor.\n\nKunden mit einer 3.x-Installation sollen ihre genaue Build-Nummer bereithalten und auf eine ergänzende Mitteilung warten."
+}

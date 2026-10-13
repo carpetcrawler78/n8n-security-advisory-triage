@@ -1,0 +1,5 @@
+{
+  "source_channel": "pdf",
+  "payload_type": "unstructured",
+  "raw_text": "ArchivePoint Security Notice\n\n| Feld | Inhalt |\n| --- | --- |\n| Dokument-ID | AP-SN-2026-044 |\n| Produkt | ArchivePoint Document Server |\n| Betroffene Versionen | 8.2.0–8.2.4 |\n| Behoben in | 8.2.5 |\n| Schwere | Kritisch |\n| CVE | Noch nicht vergeben |\n\nArchivePoint Document Server verarbeitet bestimmte Archivpakete nicht korrekt. Ein Angreifer könnte dadurch im ungünstigsten Fall Programmcode auf dem Server ausführen. Der Hersteller empfiehlt, alle Installationen der Versionen 8.2.0 bis einschließlich 8.2.4 unverzüglich auf 8.2.5 zu aktualisieren.\n\nDieses Dokument wurde automatisch aus dem Produktsicherheitsregister der ArchivPlus Systems GmbH erstellt."
+}

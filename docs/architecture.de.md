@@ -79,7 +79,10 @@ flowchart LR
 
 ## 6. Workflow 2 – Advisory Processing
 
-![Workflow 2 im n8n-Editor](../assets/screenshots/workflow2.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../assets/screenshots/workflow2-dark.png">
+  <img alt="Workflow 2 im n8n-Editor" src="../assets/screenshots/workflow2-light.png">
+</picture>
 
 19 Knoten:
 

@@ -4,7 +4,10 @@
 
 Ein n8n-Prototyp, der Sicherheitshinweise von Softwareherstellern (Security Advisories) mit einem Asset-Inventar abgleicht und für jeden Hinweis festhält, ob Kunden betroffen sein könnten. Ein Sprachmodell liest den Freitext; jede Entscheidung treffen feste Regeln.
 
-![Workflow 2 im n8n-Editor](assets/screenshots/workflow2.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/workflow2-dark.png">
+  <img alt="Workflow 2 im n8n-Editor" src="assets/screenshots/workflow2-light.png">
+</picture>
 
 ## Das Szenario
 
@@ -14,15 +17,17 @@ Alle Firmen, Produkte, Kunden und Hinweise sind erfunden; alle Daten sind synthe
 
 ## So funktioniert es
 
-**Workflow 1 – Advisory Input:** Webhook → Vorgang mit Status `NEW` speichern → Antwort `HTTP 202`.
+**Workflow 1 – Advisory Input:**
 
-**Workflow 2 – Advisory Processing (19 Knoten):**
+<img src="assets/n8n-icons/n8n_webhook.png" width="20" height="20" alt="Webhook"> Webhook → <img src="assets/n8n-icons/n8n_set_pen.png" width="20" height="20" alt="Edit Fields"> Edit Fields → <img src="assets/n8n-icons/n8n_postgres.png" width="20" height="20" alt="PostgreSQL"> Vorgang mit Status `NEW` speichern → Antwort `HTTP 202`
 
-1. ältesten `NEW`-Vorgang übernehmen (`FOR UPDATE SKIP LOCKED`)
-2. strukturierte Quellen: Felder direkt zuordnen, **ohne** Sprachmodell – Freitext: Sprachmodell liest Hersteller, Produkt, Versionen und Belegstellen heraus
+**Workflow 2 – Advisory Processing (19 Knoten):** <img src="assets/n8n-icons/n8n_bolt.png" width="20" height="20" alt="Trigger"> Start von Hand
+
+1. <img src="assets/n8n-icons/n8n_postgres.png" width="20" height="20" alt="PostgreSQL"> ältesten `NEW`-Vorgang übernehmen (`FOR UPDATE SKIP LOCKED`)
+2. <img src="assets/n8n-icons/n8n_set_pen.png" width="20" height="20" alt="Edit Fields"> strukturierte Quellen: Felder direkt zuordnen, **ohne** Sprachmodell – Freitext: Sprachmodell liest Hersteller, Produkt, Versionen und Belegstellen heraus
 3. Prüfung in Python: Pflichtfelder, Versionsregeln, jede Belegstelle muss **wörtlich** im Originaltext stehen
 4. exakter Abgleich von Produkt und Version mit dem Asset-Inventar
-5. feste Regeln setzen einen von vier Status und speichern das Ergebnis
+5. feste Regeln setzen einen von vier Status, <img src="assets/n8n-icons/n8n_postgres.png" width="20" height="20" alt="PostgreSQL"> das Ergebnis wird gespeichert
 
 | Status | Bedeutung |
 | --- | --- |
@@ -96,6 +101,10 @@ Ohne n8n: [`notebooks/workflow_in_python.ipynb`](notebooks/workflow_in_python.ip
 ## Grenzen
 
 Workflow 2 wird von Hand gestartet, der Webhook hat keine Authentifizierung, und der strukturierte Weg erwartet Eingaben, die schon dem Zielschema entsprechen. Die vollständige Liste und der Weg in den Betrieb stehen in [docs/architecture.de.md](docs/architecture.de.md#8-grenzen-des-prototyps).
+
+## Lizenz
+
+[MIT](LICENSE). Knoten-Symbole: [n8n](https://n8n.io); PostgreSQL-Logo: PostgreSQL Global Development Group.
 
 ## Sprache
 

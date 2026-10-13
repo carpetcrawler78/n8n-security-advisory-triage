@@ -4,7 +4,10 @@
 
 An n8n prototype that checks vendor security advisories against an asset inventory and records, for each advisory, whether customers may be affected. A language model reads the free text; fixed rules make every decision.
 
-![Workflow 2 in the n8n editor](assets/screenshots/workflow2.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/workflow2-dark.png">
+  <img alt="Workflow 2 in the n8n editor" src="assets/screenshots/workflow2-light.png">
+</picture>
 
 ## The scenario
 
@@ -14,15 +17,17 @@ All companies, products, customers and advisories are fictional; all data is syn
 
 ## How it works
 
-**Workflow 1 – Advisory Input:** webhook → store the request with status `NEW` → reply `HTTP 202`.
+**Workflow 1 – Advisory Input:**
 
-**Workflow 2 – Advisory Processing (19 nodes):**
+<img src="assets/n8n-icons/n8n_webhook.png" width="20" height="20" alt="Webhook"> Webhook → <img src="assets/n8n-icons/n8n_set_pen.png" width="20" height="20" alt="Edit Fields"> Edit Fields → <img src="assets/n8n-icons/n8n_postgres.png" width="20" height="20" alt="PostgreSQL"> store the request with status `NEW` → reply `HTTP 202`
 
-1. claim the oldest `NEW` request (`FOR UPDATE SKIP LOCKED`)
-2. structured sources: map fields directly, **without** LLM – free text: LLM extracts vendor, product, versions and evidence
+**Workflow 2 – Advisory Processing (19 nodes):** <img src="assets/n8n-icons/n8n_bolt.png" width="20" height="20" alt="Trigger"> started manually
+
+1. <img src="assets/n8n-icons/n8n_postgres.png" width="20" height="20" alt="PostgreSQL"> claim the oldest `NEW` request (`FOR UPDATE SKIP LOCKED`)
+2. <img src="assets/n8n-icons/n8n_set_pen.png" width="20" height="20" alt="Edit Fields"> structured sources: map fields directly, **without** LLM – free text: LLM extracts vendor, product, versions and evidence
 3. Python validation: required fields, version rules, every evidence quote must occur **verbatim** in the original text
 4. exact match of product and version against the asset inventory
-5. fixed rules set one of four statuses and store the result
+5. fixed rules set one of four statuses, <img src="assets/n8n-icons/n8n_postgres.png" width="20" height="20" alt="PostgreSQL"> the result is stored
 
 | Status | Meaning |
 | --- | --- |
@@ -96,6 +101,10 @@ Without n8n: [`notebooks/workflow_in_python.ipynb`](notebooks/workflow_in_python
 ## Limitations
 
 Workflow 2 is started manually, the webhook has no authentication, and the structured path expects input that already matches the target schema. The full list and the path to production are in [docs/architecture.md](docs/architecture.md#8-limitations-of-the-prototype).
+
+## License
+
+[MIT](LICENSE). Node icons: [n8n](https://n8n.io); PostgreSQL logo: PostgreSQL Global Development Group.
 
 ## Language
 

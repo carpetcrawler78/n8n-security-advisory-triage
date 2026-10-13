@@ -211,6 +211,10 @@ Setup of this repository: n8n 2.42.7 with external task runners, PostgreSQL 16, 
 - The structured path expects input that already matches the target schema (`JSON.parse` without safeguards). Real feeds need one mapping per `source_channel` before the shared validation; formats without a mapping should go to the LLM path.
 - The LLM runs on a cloud API as a test setup. For production a locally hosted model is intended.
 - Unusual version formats have not been tested systematically.
+- Known gaps found in a review (not fixed, because the prototype is not developed further):
+  - Routing checks `is_security_advisory = false` before schema and evidence, so a non-advisory classification ends as `INVALID_ADVISORY` even if validation failed. With the opposite order, IA-01 would end as `REVIEW_REQUIRED`, because the model returns no evidence quotes for it.
+  - Only a failed LLM call ends as `ERROR`. An error in another node (e.g. invalid JSON on the structured path) leaves the request in `PROCESSING`, and the claim query only picks up `NEW`.
+  - `validation_errors` and `normalization_notes` are created in the workflow but not stored in the database.
 - No retry limits, alerting or automated regression tests yet. Any change to prompt or rules requires re-running all 15 cases.
 - `NO_MATCH_FOUND` is only as reliable as the asset inventory.
 

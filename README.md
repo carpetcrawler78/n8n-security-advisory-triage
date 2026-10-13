@@ -41,7 +41,7 @@ All companies, products, customers and advisories are fictional; all data is syn
 - The LLM only extracts. It never sees the inventory and never decides status, matches or routing.
 - Evidence is checked against the original text, so the extraction can be traced back.
 - Structured sources skip the LLM.
-- Every request is stored before processing; technical errors end as `ERROR` and can be repeated.
+- Every request is stored before processing; a failed LLM call ends as `ERROR` and can be repeated.
 - When information is unclear, the result is `REVIEW_REQUIRED` – nothing is guessed.
 
 Details: [docs/architecture.md](docs/architecture.md)

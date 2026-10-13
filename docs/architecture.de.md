@@ -211,6 +211,10 @@ Aufbau dieses Repositorys: n8n 2.42.7 mit externen Task-Runnern, PostgreSQL 16, 
 - Der strukturierte Weg erwartet Eingaben, die schon dem Zielschema entsprechen (`JSON.parse` ohne Absicherung). Echte Feeds brauchen eine Zuordnung pro `source_channel` vor der gemeinsamen Prüfung; Formate ohne Zuordnung sollten an das Sprachmodell gehen.
 - Das Sprachmodell läuft als Testaufbau über eine Cloud-API. Für den Betrieb ist ein lokal betriebenes Modell vorgesehen.
 - Ungewöhnliche Versionsformate sind nicht systematisch getestet.
+- Bekannte Lücken aus einem Review (nicht behoben, weil der Prototyp nicht weiterentwickelt wird):
+  - Die Weiterleitung prüft `is_security_advisory = false` vor Schema und Belegstellen. Eine Einstufung als Nicht-Advisory endet daher als `INVALID_ADVISORY`, auch wenn die Prüfung fehlgeschlagen ist. Mit umgekehrter Reihenfolge würde IA-01 als `REVIEW_REQUIRED` enden, weil das Modell dafür keine Belegstellen liefert.
+  - Nur ein fehlgeschlagener Aufruf des Sprachmodells endet als `ERROR`. Ein Fehler in einem anderen Knoten (z. B. ungültiges JSON im strukturierten Weg) lässt den Vorgang in `PROCESSING` stehen, und die Übernahme-Abfrage holt nur `NEW`.
+  - `validation_errors` und `normalization_notes` entstehen im Workflow, werden aber nicht in der Datenbank gespeichert.
 - Noch keine Wiederholungsgrenzen, keine Alarmierung, keine automatisierten Regressionstests. Jede Änderung an Prompt oder Regeln erfordert einen neuen Lauf aller 15 Fälle.
 - `NO_MATCH_FOUND` ist nur so verlässlich wie das Asset-Inventar.
 

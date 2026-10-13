@@ -41,7 +41,7 @@ Alle Firmen, Produkte, Kunden und Hinweise sind erfunden; alle Daten sind synthe
 - Das Sprachmodell extrahiert nur. Es sieht das Inventar nie und entscheidet weder Status noch Treffer noch Weiterleitung.
 - Belegstellen werden gegen den Originaltext geprüft; so lässt sich die Extraktion zurückverfolgen.
 - Strukturierte Quellen laufen am Sprachmodell vorbei.
-- Jeder Vorgang wird vor der Verarbeitung gespeichert; technische Fehler enden als `ERROR` und lassen sich wiederholen.
+- Jeder Vorgang wird vor der Verarbeitung gespeichert; ein fehlgeschlagener Aufruf des Sprachmodells endet als `ERROR` und lässt sich wiederholen.
 - Sind Angaben unklar, lautet das Ergebnis `REVIEW_REQUIRED` – geraten wird nicht.
 
 Details: [docs/architecture.de.md](docs/architecture.de.md)

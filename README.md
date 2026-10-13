@@ -46,6 +46,83 @@ All companies, products, customers and advisories are fictional; all data is syn
 
 Details: [docs/architecture.md](docs/architecture.md)
 
+## Examples: from input to decision
+
+Three test advisories at opposite ends: a machine-generated vendor e-mail and two informal phone notes from the service desk. The input texts are German, as in the scenario.
+
+### 1. Automated vendor e-mail (PA-01)
+
+> Von: security-notifications@musterwerk.example<br>
+> Betreff: Sicherheitsinformation MS-2026-014 – MusterLink Remote Gateway<br>
+> Meldungstyp: Security Advisory · Herstellerbewertung: Hoch
+>
+> Bei einer internen Sicherheitsprüfung wurde ein Fehler in der Anmeldekomponente von MusterLink Remote Gateway festgestellt. […] Betroffen sind die Versionen 2.3.0 bis einschließlich 2.3.2. Installationen ab Version 2.4.0 sind nach unserem derzeitigen Kenntnisstand nicht betroffen. […] Eine CVE-Nummer wurde bislang nicht vergeben.
+
+| Step | Result |
+| --- | --- |
+| Workflow 1 | stored as `NEW`, `payload_type = unstructured` |
+| LLM extraction | vendor *Musterwerk Systems GmbH*, product *MusterLink Remote Gateway*, rule `range` 2.3.0–2.3.2 (both inclusive), fixed in 2.4.0, reference MS-2026-014, no CVE |
+| Validation | schema valid; all three evidence quotes occur verbatim in the text |
+| Matching | A-REM-01 (2.3.1) ✓ · A-REM-02 (2.3.2) ✓ · C-REM-01 (2.3.0) ✓ · B-REM-01 (2.4.0) ✗ already fixed |
+| **Decision** | **`POTENTIALLY_AFFECTED`** – `PRODUCT_AND_VERSION_MATCH`, three assets at customers A and C |
+
+<details>
+<summary>Extracted facts (JSON, as in the notebook)</summary>
+
+```json
+{
+  "is_security_advisory": true,
+  "advisory_reference": "MS-2026-014",
+  "cve_ids": [],
+  "affected_products": [{
+    "vendor": "Musterwerk Systems GmbH",
+    "product": "MusterLink Remote Gateway",
+    "affected_version_raw": "Versionen 2.3.0 bis einschließlich 2.3.2",
+    "version_rule_type": "range",
+    "lower_bound": "2.3.0", "lower_inclusive": true,
+    "upper_bound": "2.3.2", "upper_inclusive": true,
+    "fixed_version": "2.4.0"
+  }],
+  "severity_stated_by_source": "Hoch",
+  "missing_information": [],
+  "evidence_quotes": [
+    "Bei einer internen Sicherheitsprüfung wurde ein Fehler in der Anmeldekomponente von MusterLink Remote Gateway festgestellt.",
+    "Betroffen sind die Versionen 2.3.0 bis einschließlich 2.3.2.",
+    "Installationen ab Version 2.4.0 sind nach unserem derzeitigen Kenntnisstand nicht betroffen."
+  ]
+}
+```
+</details>
+
+### 2. Phone note with a clear version (PA-04)
+
+> Interne Service-Desk-Notiz – erfasst nach Telefonat
+>
+> Jemand von Warenstrom Software GmbH hat angerufen, ziemlich kurzfristig, wollte eigentlich nur schnell Bescheid geben. Es geht wohl um WarenFlow ERP, ein Sicherheitsthema beim Im- oder Export von Dokumenten, genau wusste er es selbst nicht mehr, aber er war sich sicher: alle Versionen bis einschließlich 3.8 sind betroffen, ab 3.9 sei es behoben. […] Ein schriftliches Bulletin soll noch folgen.
+
+| Step | Result |
+| --- | --- |
+| Workflow 1 | stored as `NEW`, `source_channel = phone` |
+| LLM extraction | product *WarenFlow ERP*, rule `through` – up to and including 3.8, fixed in 3.9 |
+| Validation | schema and evidence valid – no table, no CVE, still a clear version limit |
+| Matching | C-ERP-01 (3.8) ✓ – the inclusive upper bound counts |
+| **Decision** | **`POTENTIALLY_AFFECTED`** – one asset at customer C |
+
+### 3. Phone note without a version (RR-04)
+
+> Interne Service-Desk-Notiz – erfasst nach Telefonat
+>
+> Techniker von Anlagenblick GmbH hat angerufen und vor einem möglichen Problem bei PlantView HMI gewarnt: Bei bestimmten Netzwerkkonfigurationen könne die Anmeldemaske umgangen werden. Er war sich nicht sicher, ob das nur die aktuelle Version oder auch ältere Stände betrifft […]
+
+| Step | Result |
+| --- | --- |
+| Workflow 1 | stored as `NEW`, `source_channel = phone` |
+| LLM extraction | product *PlantView HMI* recognised; the affected version is explicitly unclear |
+| Matching | product is in the inventory (B-HMI-01, 7.4), but the version cannot be checked |
+| **Decision** | **`REVIEW_REQUIRED`** – `VERSION_INFORMATION_UNCLEAR`; B-HMI-01 is **not** flagged just because it is the only PlantView installation |
+
+The same kind of input – an informal phone note – ends in two different decisions, and the difference comes from the fixed rules, not from the model. All 15 cases with input texts and expected results: [`data/synthetic_security_advisories.md`](data/synthetic_security_advisories.md).
+
 ## Results
 
 In the original test setup, all 15 synthetic test cases (4 × affected, 4 × no match, 4 × review, 3 × no advisory; via e-mail, PDF, portal and phone) reach the expected status. Runtime per request: about 3.4–5.4 s with a cloud model (`openai/gpt-oss-20b` via Groq, test setup).

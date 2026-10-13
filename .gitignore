@@ -16,3 +16,13 @@ __pycache__/
 # Office drafts / Office-Entwürfe
 *.pptx
 *.docx
+
+# Local AI assistant / agent files (not published)
+CLAUDE.md
+AGENTS.md
+.claude/
+.cursor/
+**/CC_PROMPT_*.md
+*settings.local.json
+.agents/
+.lovable/

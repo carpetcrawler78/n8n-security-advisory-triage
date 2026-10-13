@@ -1,18 +1,18 @@
-# Interne Arbeitsdokumente, nicht veröffentlichen
+# Internal working files, not published / Interne Arbeitsdateien, nicht veröffentlichen
 _internal/
 
-# Lokale Umgebung
+# Local environment with secrets / Lokale Umgebung mit Geheimnissen
 .env
 *.env
 
-# Node / React
+# Node
 node_modules/
 dist/
 
-# Python
+# Python / Jupyter
 __pycache__/
 .ipynb_checkpoints/
 
-# Office-Entwürfe
+# Office drafts / Office-Entwürfe
 *.pptx
 *.docx

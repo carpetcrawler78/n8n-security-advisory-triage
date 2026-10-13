@@ -6,7 +6,7 @@ An n8n prototype that checks vendor security advisories against an asset invento
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/screenshots/workflow2-dark.png">
-  <img alt="Workflow 2 in the n8n editor" src="assets/screenshots/workflow2-light.png">
+  <img alt="Workflow 2 – Advisory Processing (19 n8n nodes)" src="assets/screenshots/workflow2-light.png">
 </picture>
 
 ## The scenario
@@ -139,7 +139,7 @@ scripts/            set up n8n, send a test case (bash, PowerShell)
 data/               test advisories with expected results (German)
 docs/               architecture (English, German)
 notebooks/          both workflows as plain Python, runs without n8n
-assets/             screenshots
+assets/             workflow 2 diagram (PNG light/dark, standalone HTML), node icons
 ```
 
 ## Run it locally
@@ -153,6 +153,7 @@ Requirements: Docker and an API key for Groq. Other chat models can replace the 
    ./scripts/setup-n8n.sh                # PowerShell: .\scripts\setup-n8n.ps1
    ```
    The script creates the credentials **Postgres account** and **Groq account** from `.env`, imports both workflows and restarts n8n. Running it again skips what already exists.
+   If PowerShell refuses to run scripts: `powershell -ExecutionPolicy Bypass -File .\scripts\setup-n8n.ps1` (same for `send-case.ps1`).
 4. Send a test case to the production webhook of workflow 1:
    ```bash
    ./scripts/send-case.sh PA-01          # PowerShell: .\scripts\send-case.ps1 PA-01
@@ -170,6 +171,8 @@ With Groq's free tier (8,000 tokens per minute), start workflow 2 at most about 
 docker compose exec postgres psql -U advisory -d advisory \
   -c "UPDATE advisory_requests SET processing_status = 'NEW' WHERE processing_status = 'ERROR';"
 ```
+
+To start over with an empty database and a fresh n8n: `docker compose down -v`, then continue with step 2. The SQL files in `sql/` only run when the database volume is created.
 
 The prototype was developed against a hosted PostgreSQL (Supabase). Schema and Docker setup were reconstructed from the workflow exports for this repository. The complete Docker run was repeated end to end with n8n 2.42.7, PostgreSQL 16 and `openai/gpt-oss-20b` via Groq: setup, import and all 15 webhook requests work as described. Result: see [Results](#results).
 

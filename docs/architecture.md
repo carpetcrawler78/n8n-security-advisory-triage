@@ -81,7 +81,7 @@ flowchart LR
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../assets/screenshots/workflow2-dark.png">
-  <img alt="Workflow 2 in the n8n editor" src="../assets/screenshots/workflow2-light.png">
+  <img alt="Workflow 2 – Advisory Processing (19 n8n nodes)" src="../assets/screenshots/workflow2-light.png">
 </picture>
 
 19 nodes:

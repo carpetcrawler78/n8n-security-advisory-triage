@@ -1,0 +1,7 @@
+# Normalise line endings in the repository.
+# Shell scripts are copied into Linux containers and must keep LF on every OS.
+* text=auto
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.png binary
+*.woff2 binary
